@@ -84,4 +84,17 @@ fig = go.Figure(
     )
 )
 
+latestDate = df["TRANS DATE"].iloc[len(df) - 1]
+totalSum = "{:,.2f}".format(df["AMOUNT"].sum())
+
+fig.update_layout(
+    title={
+        "text": "Latest Tx Date: {}, Total Sum {}".format(latestDate, totalSum),
+        "y": 0.9,
+        "x": 0.5,
+        "xanchor": "center",
+        "yanchor": "top",
+    }
+)
+
 fig.show()
