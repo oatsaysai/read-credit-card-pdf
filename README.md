@@ -4,6 +4,7 @@
 
 ```sh
 python3 -m pip install pypdf
+python3 -m pip install pycryptodome==3.15.0
 python3 -m pip install pandas
 python3 -m pip install plotly
 python3 -m pip install cli-args-system
