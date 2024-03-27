@@ -63,8 +63,15 @@ f.close()
 
 # Read the CSV file into a DataFrame
 colNames = ["TRANS DATE", "POSTING DATE", "DESCRIPTION", "REFERENCE", "AMOUNT"]
-df = pd.read_csv("temp.csv", delimiter="|", names=colNames, header=None)
+df = pd.read_csv(
+    "temp.csv",
+    delimiter="|",
+    names=colNames,
+    header=None,
+    converters={"DESCRIPTION": str.strip},
+)
 
+# Convert amount to numeric
 df["AMOUNT"] = pd.to_numeric(df["AMOUNT"])
 
 # Remove some rows
@@ -72,13 +79,20 @@ df = df.drop(df[df["DESCRIPTION"] == "PAYMENT - THANK YOU - MOB"].index)
 df = df.drop(df[df["DESCRIPTION"] == "PREVIOUS BALANCE"].index)
 df = df.drop(df[df["DESCRIPTION"] == "TOTAL BALANCE"].index)
 
-dfg = df.groupby("DESCRIPTION")["AMOUNT"].sum().sort_values(ascending=True)
+dfg = (
+    df.groupby(["DESCRIPTION", "REFERENCE"])["AMOUNT"]
+    .sum()
+    .sort_values(ascending=True)
+    .to_frame()
+    .reset_index()
+)
+dfg["TEXT"] = dfg["DESCRIPTION"] + " (" + dfg["REFERENCE"] + ")"
 
 fig = go.Figure(
     go.Bar(
-        x=dfg,
-        y=dfg.index,
-        text=dfg,
+        x=dfg["AMOUNT"],
+        y=dfg["TEXT"],
+        text=dfg["AMOUNT"],
         texttemplate="%{text:.2f}",
         orientation="h",
     )
@@ -90,7 +104,7 @@ totalSum = "{:,.2f}".format(df["AMOUNT"].sum())
 fig.update_layout(
     title={
         "text": "Latest Tx Date: {}, Total Sum {}".format(latestDate, totalSum),
-        "y": 0.9,
+        "y": 0.95,
         "x": 0.5,
         "xanchor": "center",
         "yanchor": "top",

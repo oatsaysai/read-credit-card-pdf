@@ -13,5 +13,5 @@ python3 -m pip install cli-args-system
 ### How to run
 
 ```sh
-python3 main.py -f KBGC_1000000047986508_240225.pdf -p 11111111
+python3 main.py -p 11111111 -f KBGC_1000000047986508_240225.pdf 
 ```
