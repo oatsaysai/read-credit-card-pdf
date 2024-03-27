@@ -1,17 +1,22 @@
 from pypdf import PdfReader
+import os
 import re
 import pandas as pd
+import plotly
 import plotly.graph_objects as go
 from cli_args_system import Args
 
 args = Args(convert_numbers=False)
 filename = args.flag_str("f", "filename", "")
 password = args.flag_str("p", "password", "")
+genHtml = args.flag_str("g", "gen-html", "")
 
 # Read PDF and convert to temp.csv
 reader = PdfReader(stream=filename, password=password)
 
-f = open("temp.csv", "w")
+csvFileName = filename.split(".")[0] + ".csv"
+
+f = open(csvFileName, "w")
 stop = False
 
 for page in reader.pages:
@@ -64,7 +69,7 @@ f.close()
 # Read the CSV file into a DataFrame
 colNames = ["TRANS DATE", "POSTING DATE", "DESCRIPTION", "REFERENCE", "AMOUNT"]
 df = pd.read_csv(
-    "temp.csv",
+    csvFileName,
     delimiter="|",
     names=colNames,
     header=None,
@@ -111,4 +116,9 @@ fig.update_layout(
     }
 )
 
-fig.show()
+os.remove(csvFileName)
+
+if genHtml == "True":
+    plotly.offline.plot(fig, filename=filename + ".html")
+else:
+    fig.show()
