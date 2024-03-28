@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -24,18 +25,32 @@ func main() {
 		}
 
 		// Get the text from the form.
-		text := c.FormValue("text")
+		password := c.FormValue("text")
 
 		// Save the file.
 		if err := c.SaveFile(file, "./"+file.Filename); err != nil {
 			return err
 		}
 
+		cmdStr := "python3"
+		cmdArg := []string{}
+		if os.Getenv("USE_PYTHON_BIN") == "True" {
+			cmdStr = "/app/pdf-to-graph"
+		} else {
+			cmdArg = append(cmdArg, "main.py")
+		}
+		cmdArg = append(cmdArg, "-f")
+		cmdArg = append(cmdArg, file.Filename)
+		cmdArg = append(cmdArg, "-p")
+		cmdArg = append(cmdArg, password)
+		cmdArg = append(cmdArg, "-g")
+		cmdArg = append(cmdArg, "True")
+
 		// Execute the Python script.
-		cmd := exec.Command("python3", "main.py", "-f", file.Filename, "-p", text, "-g", "True")
-		_, err = cmd.Output()
+		cmd := exec.Command(cmdStr, cmdArg...)
+		data, err := cmd.Output()
 		if err != nil {
-			log.Fatal(err)
+			fmt.Println(data)
 			return err
 		}
 

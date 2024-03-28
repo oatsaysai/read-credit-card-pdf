@@ -25,5 +25,9 @@ docker build -t read-credit-card-pdf .
 ### How to run docker
 
 ```sh
-docker run -p 8082:8082 --name read-credit-card-pdf read-credit-card-pdf 
+docker run --rm \
+    -e USE_PYTHON_BIN=True \
+    -p 8082:8082 \
+    --name read-credit-card-pdf \
+    read-credit-card-pdf 
 ```
