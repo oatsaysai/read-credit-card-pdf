@@ -32,9 +32,7 @@ for page in reader.pages:
 
         pattern = "[0-9]{2}/[0-9]{2}/[0-9]{2} [0-9]{2}/[0-9]{2}/[0-9]{2}"
         if re.search(pattern, line):
-
             tmp = ""
-
             colInLine = line.split(" ")
             for i, x in enumerate(colInLine):
                 if i <= 1:
@@ -51,7 +49,33 @@ for page in reader.pages:
                     f.write("|" + x.replace(",", "", -1))
                 else:
                     f.write(x + " ")
+            f.write("\n")
 
+        # Support 26/02/2426/02/24 pattern
+        pattern = "[0-9]{2}/[0-9]{2}/[0-9]{2}[0-9]{2}/[0-9]{2}/[0-9]{2}"
+        if re.search(pattern, line):
+            date = re.search(pattern, line).group(0)
+            f.write(date[:8] + "|" + date[8:] + "|")
+
+            line = re.sub(pattern, "", line)
+            line = re.sub("USD\d{1,3}(,\d{3})*\.\d{2}", " ", line)
+            line = re.sub("USD\d+(\.\d{2})?", " ", line)
+
+            tmp = ""
+            colInLine = line.split(" ")
+            for i, x in enumerate(colInLine):
+                if i == len(colInLine) - 3:
+                    if ":" in x:
+                        tmp = x
+                    else:
+                        f.write(x)
+                elif i == len(colInLine) - 2 or i == len(colInLine) - 1:
+                    if tmp != "":
+                        x = tmp + x
+                        tmp = ""
+                    f.write("|" + x.replace(",", "", -1))
+                else:
+                    f.write(x + " ")
             f.write("\n")
 
         if "TOTAL BALANCE" in line:
@@ -81,6 +105,7 @@ df["AMOUNT"] = pd.to_numeric(df["AMOUNT"])
 
 # Remove some rows
 df = df.drop(df[df["DESCRIPTION"] == "PAYMENT - THANK YOU - MOB"].index)
+df = df.drop(df[df["DESCRIPTION"] == "PAYMENT - OTHER"].index)
 df = df.drop(df[df["DESCRIPTION"] == "PREVIOUS BALANCE"].index)
 df = df.drop(df[df["DESCRIPTION"] == "TOTAL BALANCE"].index)
 
