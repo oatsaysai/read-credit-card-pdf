@@ -10,7 +10,7 @@ RUN apk update && apk add --no-cache --virtual .build-deps \
 RUN python3 -m venv /app/venv
 ENV PATH="/app/venv/bin:$PATH"
 
-RUN pip3 install --no-cache-dir pypdf pycryptodome pandas plotly cli-args-system pyinstaller --break-system-package
+RUN pip3 install --no-cache-dir pypdf pycryptodome pandas plotly cli-args-system pyinstaller pdfminer.six --break-system-package
 
 WORKDIR /app
 
