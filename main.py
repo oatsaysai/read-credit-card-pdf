@@ -24,8 +24,11 @@ elif "Citi" in text:
     bank = "CITIBANK"
 elif "UOB" in text:
     bank = "UOB"
+elif "KCC" in text:
+    bank = "KCC"
 else:
-    print("Support KASIKORNBANK, CITIBANK, UOB only")
+    print("Support KASIKORNBANK, CITIBANK, UOB, Krungsri only")
+    print(text)
 
 # Read PDF and convert to temp.csv
 reader = PdfReader(stream=filename, password=password)
@@ -224,9 +227,6 @@ if bank == "UOB":
                 if re.search(datePattern, line):
                     numberMatches = re.findall(numberPattern, line)
                     dateMatches = re.findall(datePattern, line)
-                    # print(line)
-                    # print(matches)
-                    # print(dateMatches)
 
                     for data in numberMatches:
                         line = line.replace(data, "")
@@ -245,8 +245,6 @@ if bank == "UOB":
                         lineArr = line.strip().split(" ")
                         line = line.replace(lineArr[len(lineArr) - 1], "")
                         line = line.strip()
-                        # print(lineArr)
-                        # print(line)
 
                         f.write(
                             f"{date}|{date}|{line}|{lineArr[len(lineArr)-1]}|{amountStr}\n"
@@ -257,6 +255,65 @@ if bank == "UOB":
                     if matches[0] != "0.00":
                         amountStr = str(numberMatches[0]).replace(",", "")
                         f.write(f"||PREVIOUS BALANCE||{amountStr}\n")
+
+# KCC
+if bank == "KCC":
+    stop = False
+    for page in reader.pages:
+        data = page.extract_text()
+
+        tmpData = ""
+        appendFlag = False
+
+        for lineNum, line in enumerate(data.split("\n")):
+            datePattern = r"^\d{2}/\d{2}/\d{2}$"
+            txDatePattern = "[0-9]{2}/[0-9]{2}/[0-9]{2} [0-9]{2}/[0-9]{2}/[0-9]{2}"
+            numberPattern = r"\b\d{1,3}(?:,\d{3})*\.\d{2}\b"
+            if re.match(datePattern, line) and date == "":
+                date = line.strip()
+            elif re.match(txDatePattern, line):
+                if "ข¿บคุณ" not in line:
+                    if re.search(numberPattern, line):
+                        lineArr = line.split(" ")
+
+                        pattern = "[0-9]{2}/[0-9]{2}/[0-9]{2}"
+                        dateMatches = re.findall(pattern, line)
+                        for data in dateMatches:
+                            line = line.replace(data, "")
+
+                        line = line.replace(lineArr[len(lineArr) - 2], "")
+                        line = line.replace(lineArr[len(lineArr) - 1], "")
+
+                        amountStr = lineArr[len(lineArr) - 1].replace(",", "")
+                        line = line.strip()
+
+                        f.write(
+                            f"{date}|{date}|{line}|{lineArr[len(lineArr) - 2]}|{amountStr}\n"
+                        )
+
+                    else:
+                        tmpData = line
+                        appendFlag = True
+
+            elif appendFlag:
+                if re.search(numberPattern, line):
+                    lineArr = line.split(" ")
+                    appendFlag = False
+                    pattern = "[0-9]{2}/[0-9]{2}/[0-9]{2}"
+                    dateMatches = re.findall(pattern, tmpData)
+
+                    for data in dateMatches:
+                        tmpData = tmpData.replace(data, "")
+
+                    amountStr = lineArr[len(lineArr) - 1].replace(",", "")
+                    tmpData = tmpData.strip()
+
+                    f.write(
+                        f"{date}|{date}|{tmpData}|{lineArr[len(lineArr) - 2]}|{amountStr}\n"
+                    )
+
+                else:
+                    tmpData += line
 
 f.close()
 
@@ -313,7 +370,7 @@ fig.update_layout(
     }
 )
 
-os.remove(csvFileName)
+# os.remove(csvFileName)
 
 if genHtml == "True":
     plotly.offline.plot(fig, filename=filename + ".html")
