@@ -22,6 +22,10 @@ if "KASIKORNBANK" in text:
     bank = "KASIKORNBANK"
 elif "Citi" in text:
     bank = "CITIBANK"
+elif "UOB" in text:
+    bank = "UOB"
+else:
+    print(text)
 
 # Read PDF and convert to temp.csv
 reader = PdfReader(stream=filename, password=password)
@@ -194,6 +198,66 @@ if bank == "KASIKORNBANK":
         if stop:
             break
 
+# UOB
+if bank == "UOB":
+    stop = False
+    for page in reader.pages:
+        data = page.extract_text()
+
+        for lineNum, line in enumerate(data.split("\n")):
+
+            numberPattern = r"\b\d{1,3}(?:,\d{3})*\.\d{2}\b"
+            datePattern = (
+                r"\b(\d{2} (?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))"
+            )
+            statementDate = (
+                r"\b\d{2} (?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC) \d{4}\b"
+            )
+
+            if "STATEMENT DATE" in line:
+                matches = re.findall(statementDate, line)
+                input_format = "%d %b %Y"
+                output_format = "%d/%m/%y"
+                date_obj = datetime.strptime(matches[0], input_format)
+                date = date_obj.strftime(output_format)
+            elif re.search(numberPattern, line):
+                if re.search(datePattern, line):
+                    numberMatches = re.findall(numberPattern, line)
+                    dateMatches = re.findall(datePattern, line)
+                    # print(line)
+                    # print(matches)
+                    # print(dateMatches)
+
+                    for data in numberMatches:
+                        line = line.replace(data, "")
+
+                    for data in dateMatches:
+                        line = line.replace(data, "")
+
+                    amountStr = str(numberMatches[len(numberMatches) - 1]).replace(
+                        ",", ""
+                    )
+                    if "CR" in line:
+                        line = line.replace("CR", "")
+                        amountStr = "-" + amountStr
+
+                    if "PAYMENT THANK YOU" not in line:
+                        lineArr = line.strip().split(" ")
+                        line = line.replace(lineArr[len(lineArr) - 1], "")
+                        line = line.strip()
+                        # print(lineArr)
+                        # print(line)
+
+                        f.write(
+                            f"{date}|{date}|{line}|{lineArr[len(lineArr)-1]}|{amountStr}\n"
+                        )
+
+                elif "PREVIOUS BALANCE" in line:
+                    numberMatches = re.findall(numberPattern, line)
+                    if matches[0] != "0.00":
+                        amountStr = str(numberMatches[0]).replace(",", "")
+                        f.write(f"||PREVIOUS BALANCE||{amountStr}\n")
+
 f.close()
 
 # Read the CSV file into a DataFrame
@@ -206,6 +270,8 @@ df = pd.read_csv(
     converters={"DESCRIPTION": str.strip},
 )
 
+print(df)
+
 # Convert amount to numeric
 df["AMOUNT"] = pd.to_numeric(df["AMOUNT"])
 
@@ -215,6 +281,8 @@ df = df.drop(df[df["DESCRIPTION"] == "PAYMENT - THANK YOU - MOB"].index)
 df = df.drop(df[df["DESCRIPTION"] == "PAYMENT - OTHER"].index)
 df = df.drop(df[df["DESCRIPTION"] == "PREVIOUS BALANCE"].index)
 df = df.drop(df[df["DESCRIPTION"] == "TOTAL BALANCE"].index)
+
+print(df)
 
 dfg = (
     df.groupby(["DESCRIPTION", "REFERENCE"])["AMOUNT"]
