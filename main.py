@@ -25,7 +25,7 @@ elif "Citi" in text:
 elif "UOB" in text:
     bank = "UOB"
 else:
-    print(text)
+    print("Support KASIKORNBANK, CITIBANK, UOB only")
 
 # Read PDF and convert to temp.csv
 reader = PdfReader(stream=filename, password=password)
@@ -270,8 +270,6 @@ df = pd.read_csv(
     converters={"DESCRIPTION": str.strip},
 )
 
-print(df)
-
 # Convert amount to numeric
 df["AMOUNT"] = pd.to_numeric(df["AMOUNT"])
 
@@ -281,8 +279,6 @@ df = df.drop(df[df["DESCRIPTION"] == "PAYMENT - THANK YOU - MOB"].index)
 df = df.drop(df[df["DESCRIPTION"] == "PAYMENT - OTHER"].index)
 df = df.drop(df[df["DESCRIPTION"] == "PREVIOUS BALANCE"].index)
 df = df.drop(df[df["DESCRIPTION"] == "TOTAL BALANCE"].index)
-
-print(df)
 
 dfg = (
     df.groupby(["DESCRIPTION", "REFERENCE"])["AMOUNT"]

@@ -1,7 +1,8 @@
 package main
 
 import (
-	"fmt"
+	"bufio"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -41,17 +42,42 @@ func main() {
 		}
 		cmdArg = append(cmdArg, "-f")
 		cmdArg = append(cmdArg, file.Filename)
-		cmdArg = append(cmdArg, "-p")
-		cmdArg = append(cmdArg, password)
+		if password != "" {
+			cmdArg = append(cmdArg, "-p")
+			cmdArg = append(cmdArg, password)
+		}
 		cmdArg = append(cmdArg, "-g")
 		cmdArg = append(cmdArg, "True")
 
 		// Execute the Python script.
 		cmd := exec.Command(cmdStr, cmdArg...)
-		data, err := cmd.Output()
+		stdout, err := cmd.StdoutPipe()
 		if err != nil {
-			fmt.Println(data)
 			return err
+		}
+		_, err = cmd.StderrPipe()
+		if err != nil {
+			return err
+		}
+		err = cmd.Start()
+		if err != nil {
+			return err
+		}
+
+		stdoutStr := ""
+		// stderrStr := ""
+
+		go func() {
+			stdoutStr = copyOutput(stdout)
+		}()
+		// go func() {
+		// 	stderrStr = copyOutput(stderr)
+		// }()
+		cmd.Wait()
+
+		if stdoutStr != "" {
+			c.WriteString(stdoutStr)
+			return nil
 		}
 
 		os.Remove(file.Filename)
@@ -67,4 +93,13 @@ func main() {
 	})
 
 	log.Fatal(app.Listen(":8082"))
+}
+
+func copyOutput(r io.Reader) string {
+	res := ""
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		res += scanner.Text()
+	}
+	return res
 }
